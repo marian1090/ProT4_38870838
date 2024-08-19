@@ -64,6 +64,74 @@ class LibrosController {
       res.status(500).json({ error: "Error al crear el libro" });
     }
   }
+
+  // funcion para actualizar un libro existente
+  async update(req, res) {
+    const { id } = req.params;
+    const updates = req.body;
+
+    console.log("Datos recibidos para actualización:", updates);
+
+    if (Object.keys(updates).length === 0) {
+      return res
+        .status(400)
+        .json({ error: "Debe proporcionar al menos un campo para actualizar" });
+    }
+
+    try {
+      const updateFields = [];
+      const updateValues = [];
+
+      for (const [key, value] of Object.entries(updates)) {
+        updateFields.push(`${key} = ?`);
+        updateValues.push(value);
+      }
+
+      updateValues.push(id);
+
+      const query = `UPDATE libros SET ${updateFields.join(", ")} WHERE id = ?`;
+
+      const [result] = await pool.query(query, updateValues);
+
+      if (result.affectedRows === 0) {
+        return res.status(404).json({ error: "Libro no encontrado" });
+      }
+
+      res.json({
+        id,
+        ...updates,
+        message: "Libro actualizado exitosamente",
+      });
+    } catch (error) {
+      console.error("Error al actualizar el libro:", error.message);
+      res.status(500).json({ error: "Error al actualizar el libro" });
+    }
+  }
+
+  // funcion para eliminar un libro por ISBN
+  async delete(req, res) {
+    const { ISBN } = req.params;
+
+    console.log("ISBN recibido para eliminación:", ISBN);
+
+    try {
+      const [result] = await pool.query("DELETE FROM libros WHERE ISBN = ?", [
+        ISBN,
+      ]);
+
+      if (result.affectedRows === 0) {
+        return res.status(404).json({ error: "Libro no encontrado" });
+      }
+
+      res.json({
+        ISBN,
+        message: "Libro eliminado exitosamente",
+      });
+    } catch (error) {
+      console.error("Error al eliminar el libro:", error.message);
+      res.status(500).json({ error: "Error al eliminar el libro" });
+    }
+  }
 }
 
 export const libro = new LibrosController();
